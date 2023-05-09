@@ -6,11 +6,15 @@ from utils.datasets import *
 from utils.parse_config import *
 
 import os
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
 import sys
 import time
 import datetime
 import argparse
 import tqdm
+
+import matplotlib.pyplot as plt
 
 import torch
 from torch.utils.data import DataLoader
@@ -58,11 +62,11 @@ def evaluate(model, path, iou_thres, conf_thres, nms_thres, img_size, batch_size
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--batch_size", type=int, default=8, help="size of each image batch")
+    parser.add_argument("--batch_size", type=int, default=4, help="size of each image batch")
     parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
-    parser.add_argument("--data_config", type=str, default="config/coco.data", help="path to data config file")
-    parser.add_argument("--weights_path", type=str, default="weights/yolov3.weights", help="path to weights file")
-    parser.add_argument("--class_path", type=str, default="data/coco.names", help="path to class label file")
+    parser.add_argument("--data_config", type=str, default="config/custom.data", help="path to data config file")
+    parser.add_argument("--weights_path", type=str, default="checkpoints/yolov3_ckpt_final.pth", help="path to weights file")
+    parser.add_argument("--class_path", type=str, default="data/custom/classes.names", help="path to class label file")
     parser.add_argument("--iou_thres", type=float, default=0.5, help="iou threshold required to qualify as detected")
     parser.add_argument("--conf_thres", type=float, default=0.001, help="object confidence threshold")
     parser.add_argument("--nms_thres", type=float, default=0.5, help="iou thresshold for non-maximum suppression")
@@ -79,27 +83,127 @@ if __name__ == "__main__":
 
     # Initiate model
     model = Darknet(opt.model_def).to(device)
-    if opt.weights_path.endswith(".weights"):
-        # Load darknet weights
-        model.load_darknet_weights(opt.weights_path)
-    else:
-        # Load checkpoint weights
-        model.load_state_dict(torch.load(opt.weights_path))
 
     print("Compute mAP...")
 
-    precision, recall, AP, f1, ap_class = evaluate(
-        model,
-        path=valid_path,
-        iou_thres=opt.iou_thres,
-        conf_thres=opt.conf_thres,
-        nms_thres=opt.nms_thres,
-        img_size=opt.img_size,
-        batch_size=8,
-    )
+    precision_list = []
+    recall_list = []
+    AP_list = []
+    f1_list = []
+      
+    for i in range(16):
+        # Load the checkpoint
+        checkpoint_path = f"checkpoints/yolov3_ckpt_{i+1}.pth"
+        model.load_state_dict(torch.load(checkpoint_path))
+    
+        # Evaluate the model and get the recall for each class
+        precision, recall, AP, f1, ap_class = evaluate(
+            model,
+            path=valid_path,
+            iou_thres=opt.iou_thres,
+            conf_thres=opt.conf_thres,
+            nms_thres=opt.nms_thres,
+            img_size=opt.img_size,
+            batch_size=8,
+        )
+        
+        precision_list.append(precision)
+        recall_list.append(recall)
+        AP_list.append(AP)
+        f1_list.append(f1)
+    
+    print(precision, recall, AP, f1, ap_class)
 
+    c1_precision_list = []
+    c1_recall_list = []
+    c1_AP_list = []
+    c1_f1_list = []
+    
+    c2_precision_list = []
+    c2_recall_list = []
+    c2_AP_list = []
+    c2_f1_list = []
+    
+    c3_precision_list = []
+    c3_recall_list = []
+    c3_AP_list = []
+    c3_f1_list = []
+    
+    c4_precision_list = []
+    c4_recall_list = []
+    c4_AP_list = []
+    c4_f1_list = []
+    
+    c5_precision_list = []
+    c5_recall_list = []
+    c5_AP_list = []
+    c5_f1_list = []
+    
+    c6_precision_list = []
+    c6_recall_list = []
+    c6_AP_list = []
+    c6_f1_list = []
+    
+    for j in precision_list:
+        c1_precision_list.append(precision_list[j][0])
+        c1_recall_list.append(recall_list[j][0])
+        c1_AP_list.append(AP_list[j][0])
+        c1_f1_list.append(f1_list[j][0])   
+        
+        c2_precision_list.append(precision_list[j][1])
+        c2_recall_list.append(recall_list[j][1])
+        c2_AP_list.append(AP_list[j][1])
+        c2_f1_list.append(f1_list[j][1])
+        
+        c3_precision_list.append(precision_list[j][2])
+        c3_recall_list.append(recall_list[j][2])
+        c3_AP_list.append(AP_list[j][2])
+        c3_f1_list.append(f1_list[j][2])
+        
+        c4_precision_list.append(precision_list[j][3])
+        c4_recall_list.append(recall_list[j][3])
+        c4_AP_list.append(AP_list[j][3])
+        c4_f1_list.append(f1_list[j][3])
+        
+        c5_precision_list.append(precision_list[j][4])
+        c5_recall_list.append(recall_list[j][4])
+        c5_AP_list.append(AP_list[j][4])
+        c5_f1_list.append(f1_list[j][4])
+        
+        c6_precision_list.append(precision_list[j][5])
+        c6_recall_list.append(recall_list[j][5])
+        c6_AP_list.append(AP_list[j][5])
+        c6_f1_list.append(f1_list[j][5])
+        
     print("Average Precisions:")
     for i, c in enumerate(ap_class):
         print(f"+ Class '{c}' ({class_names[c]}) - AP: {AP[i]}")
+        
+        if c == 0:
+            precision = c1_precision_list
+            recall = c1_recall_list
+        elif c == 1:
+            precision = c2_precision_list
+            recall = c2_recall_list
+        elif c == 2:
+            precision = c3_precision_list
+            recall = c3_recall_list
+        elif c == 1:
+            precision = c3_precision_list
+            recall = c3_recall_list
+        elif c == 1:
+            precision = c4_precision_list
+            recall = c4_recall_list
+        elif c == 1:
+            precision = c5_precision_list
+            recall = c5_recall_list 
+        
+            
 
+            # Plot precision-recall curve
+            plt.plot(recall, precision)
+            plt.xlabel('Recall')
+            plt.ylabel('Precision')
+            plt.set_title(f'Precision-Recall Curve for {class_names[c]}')
+            plt.show()
     print(f"mAP: {AP.mean()}")
